@@ -8,7 +8,7 @@ const Learn = () => {
       subtitle: "→S-O-V differentiate",
       category: "structure",
       icon: "📝",
-      link: "/learning-module"
+      link: "/learn-sentences"
     },
     {
       title: "Subject Forms",
