@@ -21,6 +21,7 @@ import SankhyaTrivia from "./components/SankhyaTrivia";
 import LearningModule from "./components/LearningModule";
 import Learn from "./components/Learn";
 import LearnObject from "./components/Learn_object";
+import LearnPresentTense from "./components/Learn_present_tense";
 
 // Fixed brand header component
 function BrandHeader() {
@@ -103,6 +104,7 @@ function AuthWrapper() {
       <Route path="/learning-module" element={<LearningModule />} />
       <Route path="/learn" element={<Learn />} />
       <Route path="/learn-object" element={<LearnObject />} />
+      <Route path="/learn-present-tense" element={<LearnPresentTense />} />
 
       {/* Protected Routes */}
       <Route

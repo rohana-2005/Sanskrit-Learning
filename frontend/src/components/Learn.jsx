@@ -29,7 +29,7 @@ const Learn = () => {
       subtitle: "वर्तमान काल",
       category: "tense",
       icon: "⏰",
-      link: "/learning-module"
+      link: "/learn-present-tense"
     },
     {
       title: "Past Tense",
