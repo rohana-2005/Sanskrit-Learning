@@ -19,6 +19,8 @@ import VerbGame from "./components/VerbGame";
 import ShabdaFusion from "./components/ShabdaFusion";
 import SankhyaTrivia from "./components/SankhyaTrivia";
 import LearningModule from "./components/LearningModule";
+import Learn from "./components/Learn";
+import LearnObject from "./components/Learn_object";
 
 // Fixed brand header component
 function BrandHeader() {
@@ -99,6 +101,8 @@ function AuthWrapper() {
       <Route path="/shabda-fusion" element={<ShabdaFusion />} />
       <Route path="/sankhya-trivia" element={<SankhyaTrivia />} />
       <Route path="/learning-module" element={<LearningModule />} />
+      <Route path="/learn" element={<Learn />} />
+      <Route path="/learn-object" element={<LearnObject />} />
 
       {/* Protected Routes */}
       <Route
