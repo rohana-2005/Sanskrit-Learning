@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 
 const LearnPresentTense = () => {
   const [currentSection, setCurrentSection] = useState(0);
-  const [quizAnswer, setQuizAnswer] = useState('');
-  const [showAnswer, setShowAnswer] = useState(false);
+  const [quizStates, setQuizStates] = useState({});
   const [flippedCards, setFlippedCards] = useState({});
 
   const sections = [
@@ -78,12 +77,14 @@ const LearnPresentTense = () => {
     { root: "कृ (to do)", forms: ["करोति", "करोषि", "करोमि"] }
   ];
 
+  // Fixed and complete styles object
   const styles = {
     container: {
       minHeight: '100vh',
       background: 'linear-gradient(135deg, #ff8a50 0%, #ff6b35 25%, #f7931e 50%, #ffb347 75%, #daa520 100%)',
       padding: '20px',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      boxSizing: 'border-box'
     },
     header: {
       textAlign: 'center',
@@ -91,125 +92,177 @@ const LearnPresentTense = () => {
     },
     title: {
       color: 'white',
-      fontSize: '2rem',
+      fontSize: '2.5rem',
       fontWeight: '700',
       marginBottom: '10px',
-      textShadow: '3px 3px 6px rgba(0, 0, 0, 0.4)'
+      textShadow: '3px 3px 6px rgba(0, 0, 0, 0.4)',
+      letterSpacing: '1px'
     },
     subtitle: {
-      color: 'rgba(255, 255, 255, 0.9)',
-      fontSize: '1.2rem',
+      color: 'rgba(255, 255, 255, 0.95)',
+      fontSize: '1.3rem',
       fontWeight: '500',
-      marginBottom: '20px'
+      marginBottom: '25px',
+      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.3)'
+    },
+    backButton: {
+      background: 'linear-gradient(45deg, #8b4513, #a0522d)',
+      color: 'white',
+      border: 'none',
+      padding: '10px 20px',
+      borderRadius: '25px',
+      fontSize: '1rem',
+      cursor: 'pointer',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      backdropFilter: 'blur(10px)',
+      boxShadow: '0 6px 20px rgba(139, 69, 19, 0.4)',
+      fontWeight: '600',
+      marginBottom: '25px',
+      display: 'inline-block'
     },
     progressBar: {
       width: '100%',
       maxWidth: '600px',
-      height: '8px',
+      height: '10px',
       backgroundColor: 'rgba(255, 255, 255, 0.3)',
-      borderRadius: '4px',
-      margin: '0 auto 20px',
-      overflow: 'hidden'
+      borderRadius: '5px',
+      margin: '0 auto 25px',
+      overflow: 'hidden',
+      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.2)'
     },
     progress: {
       height: '100%',
       background: 'linear-gradient(90deg, #4CAF50, #8BC34A)',
-      borderRadius: '4px',
+      borderRadius: '5px',
       transition: 'width 0.3s ease',
-      width: `${((currentSection + 1) / sections.length) * 100}%`
+      width: `${((currentSection + 1) / sections.length) * 100}%`,
+      boxShadow: '0 2px 4px rgba(76, 175, 80, 0.3)'
     },
     navigation: {
       display: 'flex',
       justifyContent: 'center',
-      gap: '10px',
+      flexWrap: 'wrap',
+      gap: '12px',
       marginBottom: '30px'
     },
     navButton: {
-      padding: '8px 16px',
-      borderRadius: '20px',
+      padding: '10px 18px',
+      borderRadius: '25px',
       border: 'none',
       cursor: 'pointer',
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      transition: 'all 0.3s ease'
+      fontSize: '0.95rem',
+      fontWeight: '600',
+      transition: 'all 0.3s ease',
+      minWidth: '100px',
+      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
     },
     activeNavButton: {
-      background: 'white',
-      color: '#ff6b35'
+      background: 'linear-gradient(45deg, #ffffff, #f8f8f8)',
+      color: '#ff6b35',
+      transform: 'translateY(-2px)',
+      boxShadow: '0 6px 20px rgba(255, 107, 53, 0.3)'
     },
     inactiveNavButton: {
-      background: 'rgba(255, 255, 255, 0.3)',
-      color: 'white'
+      background: 'rgba(255, 255, 255, 0.25)',
+      color: 'white',
+      backdropFilter: 'blur(10px)'
     },
     contentCard: {
-      maxWidth: '900px',
+      maxWidth: '950px',
       margin: '0 auto',
-      background: 'rgba(255, 255, 255, 0.95)',
-      borderRadius: '20px',
-      padding: '30px',
-      boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
-      backdropFilter: 'blur(20px)'
+      background: 'rgba(255, 255, 255, 0.98)',
+      borderRadius: '25px',
+      padding: '40px',
+      boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
+      backdropFilter: 'blur(20px)',
+      border: '1px solid rgba(255, 255, 255, 0.2)'
     },
     sectionTitle: {
       color: '#8b4513',
-      fontSize: '1.8rem',
+      fontSize: '2rem',
       fontWeight: '700',
-      marginBottom: '20px',
-      textAlign: 'center'
+      marginBottom: '25px',
+      textAlign: 'center',
+      textShadow: '1px 1px 3px rgba(0, 0, 0, 0.1)'
     },
     keyRule: {
-      background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+      background: 'linear-gradient(135deg, #4CAF50, #8BC34A)',
       color: 'white',
-      padding: '15px 20px',
-      borderRadius: '15px',
+      padding: '20px 25px',
+      borderRadius: '18px',
       textAlign: 'center',
-      fontSize: '1.1rem',
+      fontSize: '1.2rem',
       fontWeight: '600',
-      marginBottom: '20px',
-      boxShadow: '0 8px 16px rgba(76, 175, 80, 0.3)'
+      marginBottom: '25px',
+      boxShadow: '0 10px 25px rgba(76, 175, 80, 0.3)',
+      lineHeight: '1.5'
     },
     exampleBox: {
-      background: 'linear-gradient(45deg, #ff6b35, #ff8a50)',
+      background: 'linear-gradient(135deg, #ff6b35, #ff8a50)',
       color: 'white',
-      padding: '20px',
-      borderRadius: '15px',
+      padding: '25px',
+      borderRadius: '18px',
       textAlign: 'center',
-      fontSize: '1.5rem',
+      fontSize: '1.4rem',
       fontWeight: '600',
-      marginBottom: '20px',
-      boxShadow: '0 8px 16px rgba(255, 107, 53, 0.3)'
+      marginBottom: '25px',
+      boxShadow: '0 10px 25px rgba(255, 107, 53, 0.3)',
+      lineHeight: '1.4'
+    },
+    formulaBox: {
+      background: 'linear-gradient(135deg, #9C27B0, #E91E63)',
+      color: 'white',
+      padding: '25px',
+      borderRadius: '18px',
+      textAlign: 'center',
+      fontSize: '1.4rem',
+      fontWeight: '600',
+      marginBottom: '25px',
+      boxShadow: '0 10px 25px rgba(156, 39, 176, 0.3)',
+      lineHeight: '1.4'
     },
     table: {
       width: '100%',
       borderCollapse: 'collapse',
-      marginBottom: '20px',
-      borderRadius: '10px',
+      marginBottom: '25px',
+      borderRadius: '15px',
       overflow: 'hidden',
-      boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)'
+      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+      fontSize: '1rem'
     },
     tableHeader: {
-      background: 'linear-gradient(45deg, #8b4513, #a0522d)',
+      background: 'linear-gradient(135deg, #8b4513, #a0522d)',
       color: 'white',
-      padding: '15px',
+      padding: '18px 15px',
       textAlign: 'center',
-      fontWeight: '600'
-    },
-    tableCell: {
-      padding: '12px 15px',
-      textAlign: 'center',
-      borderBottom: '1px solid #f0f0f0',
+      fontWeight: '700',
       fontSize: '1.1rem'
     },
+    tableCell: {
+      padding: '15px',
+      textAlign: 'center',
+      borderBottom: '1px solid #e0e0e0',
+      fontSize: '1.1rem',
+      fontWeight: '500',
+      color: '#333333'
+    },
     oddRow: {
-      backgroundColor: '#f9f9f9'
+      backgroundColor: '#f8f9fa'
     },
     evenRow: {
       backgroundColor: 'white'
     },
+    cardsContainer: {
+      display: 'flex',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: '15px',
+      marginBottom: '25px',
+      padding: '10px'
+    },
     flipCard: {
-      width: '180px',
-      height: '140px',
-      margin: '10px',
+      width: '200px',
+      height: '150px',
       perspective: '1000px',
       cursor: 'pointer'
     },
@@ -218,7 +271,7 @@ const LearnPresentTense = () => {
       width: '100%',
       height: '100%',
       textAlign: 'center',
-      transition: 'transform 0.6s',
+      transition: 'transform 0.6s ease-in-out',
       transformStyle: 'preserve-3d'
     },
     flipCardFront: {
@@ -226,17 +279,18 @@ const LearnPresentTense = () => {
       width: '100%',
       height: '100%',
       backfaceVisibility: 'hidden',
-      background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+      background: 'linear-gradient(135deg, #4CAF50, #8BC34A)',
       color: 'white',
-      borderRadius: '15px',
+      borderRadius: '18px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '1rem',
-      fontWeight: '600',
-      boxShadow: '0 8px 16px rgba(76, 175, 80, 0.3)',
-      padding: '10px'
+      fontSize: '1.1rem',
+      fontWeight: '700',
+      boxShadow: '0 8px 20px rgba(76, 175, 80, 0.3)',
+      padding: '15px',
+      border: '2px solid rgba(255, 255, 255, 0.1)'
     },
     flipCardBack: {
       position: 'absolute',
@@ -244,114 +298,100 @@ const LearnPresentTense = () => {
       height: '100%',
       backfaceVisibility: 'hidden',
       transform: 'rotateY(180deg)',
-      background: 'linear-gradient(45deg, #ff6b35, #ff8a50)',
+      background: 'linear-gradient(135deg, #ff6b35, #ff8a50)',
       color: 'white',
-      borderRadius: '15px',
+      borderRadius: '18px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      fontSize: '0.95rem',
+      fontSize: '1rem',
       fontWeight: '600',
-      boxShadow: '0 8px 16px rgba(255, 107, 53, 0.3)',
-      padding: '10px'
-    },
-    cardsContainer: {
-      display: 'flex',
-      flexWrap: 'wrap',
-      justifyContent: 'center',
-      gap: '10px',
-      marginBottom: '20px'
+      boxShadow: '0 8px 20px rgba(255, 107, 53, 0.3)',
+      padding: '15px',
+      border: '2px solid rgba(255, 255, 255, 0.1)'
     },
     quizContainer: {
-      marginBottom: '20px'
+      marginBottom: '30px',
+      padding: '20px',
+      borderRadius: '15px',
+      background: 'rgba(248, 249, 250, 0.8)',
+      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
     },
     quizQuestion: {
-      fontSize: '1.3rem',
-      fontWeight: '600',
+      fontSize: '1.4rem',
+      fontWeight: '700',
       color: '#8b4513',
-      marginBottom: '15px',
-      textAlign: 'center'
+      marginBottom: '20px',
+      textAlign: 'center',
+      lineHeight: '1.4'
     },
     optionButton: {
       display: 'block',
       width: '100%',
-      padding: '12px 20px',
-      margin: '8px 0',
-      border: '2px solid #ddd',
-      borderRadius: '10px',
+      padding: '15px 20px',
+      margin: '10px 0',
+      border: '2px solid #e0e0e0',
+      borderRadius: '12px',
       background: 'white',
       cursor: 'pointer',
       fontSize: '1.1rem',
       transition: 'all 0.3s ease',
-      textAlign: 'left'
+      textAlign: 'left',
+      fontWeight: '500',
+      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'
     },
     correctOption: {
-      background: 'linear-gradient(45deg, #4CAF50, #8BC34A)',
+      background: 'linear-gradient(135deg, #4CAF50, #8BC34A)',
       color: 'white',
-      borderColor: '#4CAF50'
+      borderColor: '#4CAF50',
+      boxShadow: '0 5px 15px rgba(76, 175, 80, 0.3)'
     },
     incorrectOption: {
-      background: 'linear-gradient(45deg, #f44336, #ff5722)',
+      background: 'linear-gradient(135deg, #f44336, #ff5722)',
       color: 'white',
-      borderColor: '#f44336'
+      borderColor: '#f44336',
+      boxShadow: '0 5px 15px rgba(244, 67, 54, 0.3)'
     },
     explanation: {
       background: 'rgba(76, 175, 80, 0.1)',
-      padding: '15px',
-      borderRadius: '10px',
+      padding: '18px',
+      borderRadius: '12px',
       marginTop: '15px',
-      borderLeft: '4px solid #4CAF50'
+      borderLeft: '4px solid #4CAF50',
+      fontSize: '1rem',
+      lineHeight: '1.5',
+      color: '#333333'
+    },
+    tip: {
+      background: 'linear-gradient(135deg, #2196F3, #03A9F4)',
+      color: 'white',
+      padding: '15px 20px',
+      borderRadius: '12px',
+      margin: '15px 0',
+      fontSize: '1rem',
+      fontWeight: '500',
+      boxShadow: '0 5px 15px rgba(33, 150, 243, 0.3)',
+      lineHeight: '1.4'
     },
     navigationButtons: {
       display: 'flex',
       justifyContent: 'space-between',
-      marginTop: '30px'
+      marginTop: '40px',
+      gap: '20px'
     },
     navBtn: {
-      padding: '12px 24px',
+      padding: '12px 30px',
       border: 'none',
       borderRadius: '25px',
       cursor: 'pointer',
-      fontSize: '1rem',
+      fontSize: '1.1rem',
       fontWeight: '600',
       transition: 'all 0.3s ease',
-      background: 'linear-gradient(45deg, #8b4513, #a0522d)',
-      color: 'white'
-    },
-    tip: {
-      background: 'linear-gradient(45deg, #2196F3, #03A9F4)',
+      background: 'linear-gradient(135deg, #8b4513, #a0522d)',
       color: 'white',
-      padding: '12px 16px',
-      borderRadius: '10px',
-      margin: '10px 0',
-      fontSize: '0.95rem',
-      fontWeight: '500'
-    },
-    formulaBox: {
-      background: 'linear-gradient(45deg, #9C27B0, #E91E63)',
-      color: 'white',
-      padding: '20px',
-      borderRadius: '15px',
-      textAlign: 'center',
-      fontSize: '1.3rem',
-      fontWeight: '600',
-      marginBottom: '20px',
-      boxShadow: '0 8px 16px rgba(156, 39, 176, 0.3)'
-    },
-    backButton: {
-      background: 'linear-gradient(45deg, #8b4513, #a0522d)',
-      color: 'white',
-      border: 'none',
-      padding: '8px 18px',
-      borderRadius: '20px',
-      fontSize: '0.9rem',
-      cursor: 'pointer',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      backdropFilter: 'blur(10px)',
-      boxShadow: '0 4px 15px rgba(139, 69, 19, 0.3)',
-      fontWeight: '500',
-      marginBottom: '20px'
+      boxShadow: '0 5px 15px rgba(139, 69, 19, 0.3)',
+      minWidth: '120px'
     }
   };
 
@@ -362,27 +402,33 @@ const LearnPresentTense = () => {
     }));
   };
 
-  const handleQuizAnswer = (optionIndex, isCorrect) => {
-    setQuizAnswer(optionIndex);
-    setShowAnswer(true);
+  const handleQuizAnswer = (quizIndex, optionIndex, isCorrect) => {
+    setQuizStates(prev => ({
+      ...prev,
+      [quizIndex]: {
+        answer: optionIndex,
+        showAnswer: true
+      }
+    }));
   };
 
   const handleButtonHover = (e) => {
     e.target.style.background = 'linear-gradient(45deg, #a0522d, #cd853f)';
-    e.target.style.transform = 'translateY(-2px) scale(1.05)';
-    e.target.style.boxShadow = '0 8px 25px rgba(139, 69, 19, 0.4)';
+    e.target.style.transform = 'translateY(-3px) scale(1.05)';
+    e.target.style.boxShadow = '0 10px 30px rgba(139, 69, 19, 0.5)';
   };
 
   const handleButtonLeave = (e) => {
     e.target.style.background = 'linear-gradient(45deg, #8b4513, #a0522d)';
     e.target.style.transform = 'translateY(0) scale(1)';
-    e.target.style.boxShadow = '0 4px 15px rgba(139, 69, 19, 0.3)';
+    e.target.style.boxShadow = '0 6px 20px rgba(139, 69, 19, 0.4)';
   };
 
   const handleBackToDashboard = () => {
     window.location.href = '/dashboard';
   };
 
+  // Component render functions with enhanced styling
   const renderIntroSection = () => (
     <div>
       <h2 style={styles.sectionTitle}>⏰ Present Tense - वर्तमान काल</h2>
@@ -396,7 +442,7 @@ const LearnPresentTense = () => {
       <div style={styles.exampleBox}>
         अहम् पुस्तकम् पठामि।
         <br/>
-        <small style={{fontSize: '1rem', opacity: 0.9}}>
+        <small style={{fontSize: '1.1rem', opacity: 0.9, marginTop: '10px', display: 'block'}}>
           I am reading a book (right now)
         </small>
       </div>
@@ -409,7 +455,7 @@ const LearnPresentTense = () => {
       <div style={styles.formulaBox}>
         Verb Root + Present Stem + Person Ending = Present Tense
         <br/>
-        <small style={{fontSize: '1rem', opacity: 0.9}}>
+        <small style={{fontSize: '1.1rem', opacity: 0.9, marginTop: '10px', display: 'block'}}>
           धातु + वर्तमान स्टेम + पुरुष प्रत्यय = वर्तमान काल
         </small>
       </div>
@@ -427,7 +473,7 @@ const LearnPresentTense = () => {
       <div style={styles.exampleBox}>
         गम् → गच्छ् → गच्छामि
         <br/>
-        <small style={{fontSize: '1rem', opacity: 0.9}}>
+        <small style={{fontSize: '1.1rem', opacity: 0.9, marginTop: '10px', display: 'block'}}>
           Root → Present Stem → I go
         </small>
       </div>
@@ -476,10 +522,10 @@ const LearnPresentTense = () => {
               <div style={styles.flipCardFront}>
                 <strong>{verb.root}</strong>
                 <br/>
-                <small>Click to see forms</small>
+                <small style={{marginTop: '10px', opacity: 0.9}}>Click to see forms</small>
               </div>
               <div style={styles.flipCardBack}>
-                <div style={{fontSize: '0.85rem', lineHeight: '1.4'}}>
+                <div style={{fontSize: '0.95rem', lineHeight: '1.6', color: 'white'}}>
                   <strong>3rd:</strong> {verb.forms[0]}<br/>
                   <strong>2nd:</strong> {verb.forms[1]}<br/>
                   <strong>1st:</strong> {verb.forms[2]}
@@ -498,32 +544,36 @@ const LearnPresentTense = () => {
   const renderQuizSection = () => (
     <div>
       <h2 style={styles.sectionTitle}>🎮 Test Your Knowledge</h2>
-      {quizzes.map((quiz, quizIndex) => (
-        <div key={quizIndex} style={styles.quizContainer}>
-          <div style={styles.quizQuestion}>
-            Quiz {quizIndex + 1}: {quiz.question}
-          </div>
-          {quiz.options.map((option, optionIndex) => (
-            <button
-              key={optionIndex}
-              style={{
-                ...styles.optionButton,
-                ...(showAnswer && optionIndex === quiz.correct ? styles.correctOption : {}),
-                ...(showAnswer && quizAnswer === optionIndex && optionIndex !== quiz.correct ? styles.incorrectOption : {})
-              }}
-              onClick={() => handleQuizAnswer(optionIndex, optionIndex === quiz.correct)}
-              disabled={showAnswer}
-            >
-              {option.replace(' ✅', '')}
-            </button>
-          ))}
-          {showAnswer && (
-            <div style={styles.explanation}>
-              <strong>Explanation:</strong> {quiz.explanation}
+      {quizzes.map((quiz, quizIndex) => {
+        const currentState = quizStates[quizIndex] || { answer: null, showAnswer: false };
+        return (
+          <div key={quizIndex} style={styles.quizContainer}>
+            <div style={styles.quizQuestion}>
+              Quiz {quizIndex + 1}: {quiz.question}
             </div>
-          )}
-        </div>
-      ))}
+            {quiz.options.map((option, optionIndex) => (
+              <button
+                key={optionIndex}
+                style={{
+                  ...styles.optionButton,
+                  color: '#333333', // Ensure text is always black
+                  ...(currentState.showAnswer && optionIndex === quiz.correct ? styles.correctOption : {}),
+                  ...(currentState.showAnswer && currentState.answer === optionIndex && optionIndex !== quiz.correct ? styles.incorrectOption : {})
+                }}
+                onClick={() => handleQuizAnswer(quizIndex, optionIndex, optionIndex === quiz.correct)}
+                disabled={currentState.showAnswer}
+              >
+                {option.replace(' ✅', '')}
+              </button>
+            ))}
+            {currentState.showAnswer && (
+              <div style={styles.explanation}>
+                <strong>Explanation:</strong> {quiz.explanation}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -538,7 +588,7 @@ const LearnPresentTense = () => {
       <div style={styles.exampleBox}>
         Practice Sentences:
         <br/>
-        <div style={{fontSize: '1.2rem', marginTop: '10px', lineHeight: '1.6'}}>
+        <div style={{fontSize: '1.3rem', marginTop: '15px', lineHeight: '1.8'}}>
           अहम् गृहम् गच्छामि। (I go home)<br/>
           त्वम् पुस्तकम् पठसि। (You read a book)<br/>
           सः मित्रम् पश्यति। (He sees a friend)
@@ -596,8 +646,7 @@ const LearnPresentTense = () => {
               }}
               onClick={() => {
                 setCurrentSection(index);
-                setShowAnswer(false);
-                setQuizAnswer('');
+                setQuizStates({});
               }}
             >
               {label}
@@ -615,7 +664,10 @@ const LearnPresentTense = () => {
               ...styles.navBtn,
               opacity: currentSection === 0 ? 0.5 : 1
             }}
-            onClick={() => setCurrentSection(Math.max(0, currentSection - 1))}
+            onClick={() => {
+              setCurrentSection(Math.max(0, currentSection - 1));
+              setQuizStates({});
+            }}
             disabled={currentSection === 0}
           >
             ← Previous
@@ -626,7 +678,10 @@ const LearnPresentTense = () => {
               ...styles.navBtn,
               opacity: currentSection === sections.length - 1 ? 0.5 : 1
             }}
-            onClick={() => setCurrentSection(Math.min(sections.length - 1, currentSection + 1))}
+            onClick={() => {
+              setCurrentSection(Math.min(sections.length - 1, currentSection + 1));
+              setQuizStates({});
+            }}
             disabled={currentSection === sections.length - 1}
           >
             Next →

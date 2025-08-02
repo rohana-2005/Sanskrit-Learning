@@ -21,7 +21,7 @@ import SankhyaTrivia from "./components/SankhyaTrivia";
 import LearningModule from "./components/LearningModule";
 import Learn from "./components/Learn";
 import LearnObject from "./components/Learn_object";
-import LearnSanskritSentence from "./components/Learn_SentenceStructure"; 
+import LearnSanskritSentence from "./components/Learn_Sentence_Structure"; 
 import LearnPresentTense from "./components/Learn_present_tense";
 
 // Fixed brand header component
