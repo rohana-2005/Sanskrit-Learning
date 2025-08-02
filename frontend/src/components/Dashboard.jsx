@@ -90,7 +90,7 @@ const Dashboard = () => {
         "/tense-game",
         "/verb-game",
         "/game",
-        "/learning-module",
+        "/learn",
       ];
       if (gameRoutes.includes(prevPath) && currentPath === "/") {
         setShowHero(false);
@@ -164,7 +164,7 @@ const Dashboard = () => {
       title: "Learn",
       icon: MessageCircle,
       gradient: "linear-gradient(135deg, #B8860B, #8B4513)",
-      path: "/learning-module",
+      path: "/learn",
     },
   ];
 
