@@ -15,7 +15,7 @@ const Learn = () => {
       subtitle: "Prathama Vibhakti",
       category: "forms",
       icon: "👤",
-      link: "/learning-module"
+      link: "/learn-subject"
     },
     {
       title: "Object Forms", 
@@ -36,14 +36,14 @@ const Learn = () => {
       subtitle: "भूत काल",
       category: "tense",
       icon: "⏪",
-      link: "/learning-module"
+      link: "/learn-past-tense"
     },
     {
       title: "Future Tense",
       subtitle: "भविष्यत् काल",
       category: "tense",
       icon: "⏩",
-      link: "/learning-module"
+      link: "/learn-future-tense"
     }
   ];
 
