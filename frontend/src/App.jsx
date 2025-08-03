@@ -23,6 +23,9 @@ import Learn from "./components/Learn";
 import LearnObject from "./components/Learn_object";
 import LearnSanskritSentence from "./components/Learn_Sentence_Structure"; 
 import LearnPresentTense from "./components/Learn_present_tense";
+import LearnSubject from "./components/LearnSubject";
+import LearnFutureTense from "./components/LearnFutureTense";
+import LearnPastTense from "./components/LearnPastTense";
 
 // Fixed brand header component
 function BrandHeader() {
@@ -92,76 +95,78 @@ function AuthWrapper() {
 
   return (
     <>
-    <BrandHeader />
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Landing />} />
-      <Route path="/questions" element={<Questions />} />
-      <Route path="/login" element={<LoginSignup onLogin={handleLogin} />} />
-      <Route path="/tense-game" element={<TenseGame />} />
-      <Route path="/verb-game" element={<VerbGame />} />
-      <Route path="/shabda-fusion" element={<ShabdaFusion />} />
-      <Route path="/sankhya-trivia" element={<SankhyaTrivia />} />
-      <Route path="/learning-module" element={<LearningModule />} />
-      <Route path="/learn" element={<Learn />} />
-      <Route path="/learn-object" element={<LearnObject />} />
-      <Route path="/learn-sentences" element={<LearnSanskritSentence />} />
-    
-      <Route path="/learn-present-tense" element={<LearnPresentTense />} />
+      <BrandHeader />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/questions" element={<Questions />} />
+        <Route path="/login" element={<LoginSignup onLogin={handleLogin} />} />
+        <Route path="/tense-game" element={<TenseGame />} />
+        <Route path="/verb-game" element={<VerbGame />} />
+        <Route path="/shabda-fusion" element={<ShabdaFusion />} />
+        <Route path="/sankhya-trivia" element={<SankhyaTrivia />} />
+        <Route path="/learning-module" element={<LearningModule />} />
+        <Route path="/learn" element={<Learn />} />
+        <Route path="/learn-object" element={<LearnObject />} />
+        <Route path="/learn-sentences" element={<LearnSanskritSentence />} />
+        <Route path="/learn-subject" element={<LearnSubject />} />
+        <Route path="/learn-present-tense" element={<LearnPresentTense />} />
+        {<Route path="/learn-past-tense" element={<LearnPastTense />} />}
+        <Route path="/learn-future-tense" element={<LearnFutureTense />} />
 
-      {/* Protected Routes */}
-      <Route
-        path="/hero-dashboard"
-        element={
-          isAuthenticated ? (
-            <HeroSectionWithButton onLogout={handleLogout} />
-          ) : (
-            <LoginSignup onLogin={handleLogin} />
-          )
-        }
-      />
-      <Route
-        path="/hero"
-        element={
-          isAuthenticated ? (
-            <HeroSectionWithButton onLogout={handleLogout} />
-          ) : (
-            <LoginSignup onLogin={handleLogin} />
-          )
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          isAuthenticated ? (
-            <DashboardWithNavigation onLogout={handleLogout} />
-          ) : (
-            <LoginSignup onLogin={handleLogin} />
-          )
-        }
-      />
+        {/* Protected Routes */}
+        <Route
+          path="/hero-dashboard"
+          element={
+            isAuthenticated ? (
+              <HeroSectionWithButton onLogout={handleLogout} />
+            ) : (
+              <LoginSignup onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/hero"
+          element={
+            isAuthenticated ? (
+              <HeroSectionWithButton onLogout={handleLogout} />
+            ) : (
+              <LoginSignup onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            isAuthenticated ? (
+              <DashboardWithNavigation onLogout={handleLogout} />
+            ) : (
+              <LoginSignup onLogin={handleLogin} />
+            )
+          }
+        />
 
-      <Route
-        path="/game"
-        element={
-          isAuthenticated ? (
-            <DragDropGame onLogout={handleLogout} />
-          ) : (
-            <LoginSignup onLogin={handleLogin} />
-          )
-        }
-      />
-      <Route
-        path="/tensegame"
-        element={
-          isAuthenticated ? (
-            <TenseGame />
-          ) : (
-            <LoginSignup onLogin={handleLogin} />
-          )
-        }
-      />
-    </Routes>
+        <Route
+          path="/game"
+          element={
+            isAuthenticated ? (
+              <DragDropGame onLogout={handleLogout} />
+            ) : (
+              <LoginSignup onLogin={handleLogin} />
+            )
+          }
+        />
+        <Route
+          path="/tensegame"
+          element={
+            isAuthenticated ? (
+              <TenseGame />
+            ) : (
+              <LoginSignup onLogin={handleLogin} />
+            )
+          }
+        />
+      </Routes>
     </>
   );
 }
