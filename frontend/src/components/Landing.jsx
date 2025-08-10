@@ -83,6 +83,63 @@ const Landing = ({ onBegin }) => {
       100% { background-position: 0% 50%; }
     }
 
+    .auth-buttons {
+      position: absolute;
+      top: 2rem;
+      right: 2rem;
+      display: flex;
+      gap: 1rem;
+      z-index: 20;
+      animation: fadeInDown 1s ease 0.3s both;
+    }
+
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .auth-button {
+      padding: 0.6rem 1.2rem;
+      border-radius: 25px;
+      font-weight: 500;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      letter-spacing: 0.02em;
+    }
+
+    .auth-button.login {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .auth-button.login:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
+    }
+
+    .auth-button.signup {
+      background: linear-gradient(135deg, #DAA520, #CD853F);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(218, 165, 32, 0.3);
+    }
+
+    .auth-button.signup:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(218, 165, 32, 0.4);
+      background: linear-gradient(135deg, #E6B800, #D4943F);
+    }
+
     .floating-element {
       position: absolute;
       width: var(--size);
@@ -317,6 +374,17 @@ const Landing = ({ onBegin }) => {
       .main-title { font-size: clamp(1.2rem, 4vw, 2.2rem); }
       .subtitle { font-size: clamp(0.9rem, 2vw, 1.1rem); }
       .description { font-size: clamp(0.8rem, 1.2vw, 0.95rem); }
+      
+      .auth-buttons {
+        top: 1rem;
+        right: 1rem;
+        gap: 0.5rem;
+      }
+      
+      .auth-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
     }
   `;
 
@@ -326,6 +394,12 @@ const Landing = ({ onBegin }) => {
       <style>{styles}</style>
       <div className="landing-container">
         <div className="parallax-bg" />
+        
+        {/* Auth buttons in top-right corner */}
+        <div className="auth-buttons">
+          <Link to="/login" className="auth-button login">Login</Link>
+          <Link to="/login" className="auth-button signup">Sign Up</Link>
+        </div>
         
         <div className="lotus-pattern" />
         

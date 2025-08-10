@@ -15,6 +15,7 @@ const ShabdaFusion = ({ score: propScore }) => {
   const [shuffledSubjects, setShuffledSubjects] = useState([]);
   const [shuffledVerbs, setShuffledVerbs] = useState([]);
   const [error, setError] = useState(null);
+  const [showCompletionMessage, setShowCompletionMessage] = useState(false); // Added state for completion message
 
   const numberNames = {
     sg: "singular",
@@ -70,6 +71,7 @@ const ShabdaFusion = ({ score: propScore }) => {
     setMatchedItems([]);
     setSessionScore(0); // Reset session score for new game
     setError(null);
+    setShowCompletionMessage(false); // Reset completion message
 
     const subjectForms = ["sg", "du", "pl"].map((num) => ({
       text: random.subject_forms[num],
@@ -127,8 +129,13 @@ const ShabdaFusion = ({ score: propScore }) => {
       setMatchedItems((prev) => [...prev, subject.text, verb.text]);
       setMatchedPairs((prev) => {
         const updated = prev + 1;
-        // Increment session score by 10 for a correct match
+        console.log("matchedPairs:", updated); // Debug log
+        // Increment session score by 1 for a correct match
         setSessionScore((prev) => prev + 1);
+        // Show completion message if all pairs matched
+        if (updated === 3) {
+          setShowCompletionMessage(true);
+        }
         // Update global score on the server
         updateScore("shabdaFusion", 1)
           .then((newGlobalScore) => {
@@ -136,11 +143,7 @@ const ShabdaFusion = ({ score: propScore }) => {
             authAPI
               .profile()
               .then((profile) => {
-                // Update global score in state (optional, depending on navigation)
-                if (updated === 3) {
-                  document.getElementById("completionMessage").style.display =
-                    "block";
-                }
+                // No completion message logic here
               })
               .catch((err) => {
                 setError("Failed to refresh profile: " + err.message);
@@ -284,7 +287,7 @@ const ShabdaFusion = ({ score: propScore }) => {
           font-size: 1.3rem;
           font-weight: bold;
           color: #fff;
-          display: none;
+          display: ${showCompletionMessage ? "block" : "none"};
         }
   
         button {

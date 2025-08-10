@@ -8,8 +8,8 @@ const TenseGame = ({ score: propScore }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const globalScore = location.state?.score ?? propScore ?? 0;
-  const [sessionScore, setSessionScore] = useState(0); // Initialize session score to 0
-  const [questions, setQuestions] = useState([]); // Store all questions
+  const [sessionScore, setSessionScore] = useState(0);
+  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selected, setSelected] = useState("");
   const [result, setResult] = useState("");
@@ -17,14 +17,13 @@ const TenseGame = ({ score: propScore }) => {
   const [attempt, setAttempt] = useState(0);
   const [showNext, setShowNext] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [submitLoading, setSubmitLoading] = useState(false); // Loading for Submit
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [qCount, setQCount] = useState(0);
   const [roundFinished, setRoundFinished] = useState(false);
   const [error, setError] = useState(null);
 
   const options = ["present", "past", "future"];
 
-  // Clear localStorage and reset session score on mount
   useEffect(() => {
     localStorage.removeItem("tenseGameScore");
     setSessionScore(0);
@@ -34,11 +33,11 @@ const TenseGame = ({ score: propScore }) => {
     return (arr) => [...arr].sort(() => Math.random() - 0.5);
   }, []);
 
-  const updateScore = async (gameName, scoreIncrement) => {
+  const updateScore = async (scoreIncrement) => {
     try {
       const token = tokenManager.getToken();
       if (!token) {
-        throw new Error("No token found, please log in again");
+        throw new Error("Please log in to save your score");
       }
       const response = await fetch("http://localhost:5000/api/update-score", {
         method: "POST",
@@ -49,33 +48,83 @@ const TenseGame = ({ score: propScore }) => {
         body: JSON.stringify({ score: scoreIncrement }),
       });
       const data = await response.json();
-      if (response.ok) {
-        return data.score;
-      } else {
+      if (!response.ok) {
         throw new Error(data.message || "Failed to update score");
       }
+      return data.score;
     } catch (err) {
       setError(err.message || "Failed to update score");
       throw err;
     }
   };
 
+  const saveScore = async (score) => {
+    try {
+      const token = tokenManager.getToken();
+      if (!token) {
+        throw new Error("Please log in to save your score");
+      }
+      const response = await fetch("http://localhost:5000/api/save-score", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ score }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to save score");
+      }
+    } catch (err) {
+      setError(err.message || "Failed to save score");
+    }
+  };
+
   const fetchQuestions = async () => {
     setLoading(true);
     try {
-      const fetchedQuestions = [];
-      for (let i = 0; i < TOTAL_QUESTIONS; i++) {
-        const res = await fetch("http://localhost:5003/api/get-tense-question");
-        const data = await res.json();
-        const allOptions = shuffleArray([...options]);
-        fetchedQuestions.push({ ...data, options: allOptions });
+      const response = await fetch(
+        `http://localhost:5003/api/get-tense-questions?count=${TOTAL_QUESTIONS}`
+      );
+      const data = await response.json();
+      console.log("Fetched questions:", JSON.stringify(data, null, 2));
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error ${response.status}`);
       }
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      const questionsArray = Array.isArray(data) ? data : data.data || [];
+      if (!Array.isArray(questionsArray)) {
+        console.error("Response is not an array:", data);
+        throw new Error("Response is not an array");
+      }
+      const fetchedQuestions = questionsArray
+        .map((q) => {
+          if (!q.sentence || !q.tense) {
+            console.warn("Invalid question:", q);
+            return null;
+          }
+          return {
+            sentence: q.sentence,
+            tense: q.tense,
+            explanation: q.explanation || "No explanation available",
+            options: shuffleArray([...options]),
+          };
+        })
+        .filter((q) => q !== null);
+      if (fetchedQuestions.length === 0) {
+        throw new Error("No valid questions received");
+      }
+      console.log("Processed questions:", fetchedQuestions);
       setQuestions(fetchedQuestions);
       setError(null);
     } catch (err) {
+      console.error("Fetch error:", err.message, err.stack);
       setQuestions([]);
       setResult("❌ Failed to load questions.");
-      setError("Failed to load questions. Please try again.");
+      setError(`Failed to load questions: ${err.message}`);
     }
     setLoading(false);
   };
@@ -89,19 +138,7 @@ const TenseGame = ({ score: propScore }) => {
   useEffect(() => {
     if (roundFinished) {
       localStorage.setItem("tenseGameScore", sessionScore);
-      const userData = JSON.parse(localStorage.getItem("user"));
-      if (userData && userData.id) {
-        fetch("http://localhost:5000/api/save-score", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            user_id: userData.id,
-            score: sessionScore,
-          }),
-        });
-      }
+      saveScore(sessionScore);
     }
   }, [roundFinished, sessionScore]);
 
@@ -111,11 +148,13 @@ const TenseGame = ({ score: propScore }) => {
     if (!selected || !currentQuestion) return;
     setSubmitLoading(true);
 
-    if (selected === currentQuestion.tense && attempt === 0) {
+    if (selected === currentQuestion.tense) {
       setResult(`✅ Correct!\n${currentQuestion.explanation}`);
       setHint("");
-      setSessionScore((prev) => prev + 1);
-      await updateScore("tenseGame", 1);
+      if (attempt === 0) {
+        setSessionScore((prev) => prev + 1);
+        await updateScore(1);
+      }
       setShowNext(true);
     } else {
       const nextAttempt = attempt + 1;
@@ -195,11 +234,11 @@ const TenseGame = ({ score: propScore }) => {
         )}
 
         {loading ? (
-          <div className="sentence-box">Loading...</div>
+          <div className="sentence-box">Loading questions...</div>
         ) : roundFinished ? (
           <div>
             <p className="result" style={{ fontSize: "1.3rem" }}>
-              Final Score: {sessionScore} / {TOTAL_QUESTIONS * 1}
+              Final Score: {sessionScore} / {TOTAL_QUESTIONS}
             </p>
             <button className="submit-btn" onClick={handlePlayAgain}>
               Play Again
@@ -321,7 +360,7 @@ const TenseGame = ({ score: propScore }) => {
             color: black;
           }
 
-          .question-count, .session-score, .score {
+          .question-count, .session-score {
             margin: 0.5rem 0;
             font-size: 1.1rem;
             font-weight: bold;

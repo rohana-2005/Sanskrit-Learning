@@ -40,39 +40,45 @@ const Dashboard = () => {
     const fetchProfile = async () => {
       setIsScoreLoading(true);
       try {
-        // If coming from a game with a score, update the backend score
-        if (
-          location.state?.fromGame &&
-          typeof location.state.score === "number"
-        ) {
-          const userData = JSON.parse(localStorage.getItem("user"));
-          if (userData?.id) {
-            await fetch("http://localhost:5000/api/save-score", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                user_id: userData.id,
-                score: location.state.score,
-              }),
-            });
+        // Only fetch profile if authenticated
+        if (tokenManager.isAuthenticated()) {
+          // If coming from a game with a score, update the backend score
+          if (location.state?.fromGame && typeof location.state.score === "number") {
+            const userData = JSON.parse(localStorage.getItem("user"));
+            if (userData?.id) {
+              await fetch("http://localhost:5000/api/save-score", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  user_id: userData.id,
+                  score: location.state.score,
+                }),
+              });
+            }
           }
-        }
 
-        // Fetch the updated profile
-        const profile = await authAPI.profile();
-        console.log("Profile data:", profile);
-        setUserName(profile.full_name || profile.username || "User");
-        setScore(profile.score || 0);
-        setError(null);
+          // Fetch the updated profile
+          const profile = await authAPI.profile();
+          console.log("Profile data:", profile);
+          setUserName(profile.full_name || profile.username || "User");
+          setScore(profile.score || 0);
+          setError(null);
+        } else {
+          // If not authenticated, use default values
+          setUserName("Guest");
+          setScore(0);
+          setError(null);
+        }
       } catch (error) {
         console.error(
           "Error fetching profile:",
           error.response?.data || error.message
         );
-        setError("Failed to load profile. Please log in again.");
-        if (error.response?.status === 401) {
+        if (tokenManager.isAuthenticated() && error.response?.status === 401) {
           tokenManager.removeToken();
           navigate("/login");
+        } else {
+          setError(null); // Clear error for unauthenticated users
         }
       } finally {
         setIsScoreLoading(false);
@@ -802,6 +808,23 @@ const Dashboard = () => {
         transform: translate(0px, 0px) rotate(360deg);
       }
     }
+
+    .logout-button {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 0, 0, 0.2);
+      border: 1px solid rgba(255, 0, 0, 0.5);
+      border-radius: 20px;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .logout-button:hover {
+      background: rgba(255, 0, 0, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.2);
+    }
   `;
 
   const handlePlayClick = () => {
@@ -814,6 +837,11 @@ const Dashboard = () => {
 
   const handleBackToHero = () => {
     navigate("/hero");
+  };
+
+  const handleLogout = () => {
+    tokenManager.removeToken();
+    navigate("/");
   };
 
   const FloatingElement = ({
@@ -889,6 +917,11 @@ const Dashboard = () => {
                 <div style={{ color: "red", fontSize: "1rem" }}>{error}</div>
               )}
             </div>
+            {tokenManager.isAuthenticated() && (
+              <button className="logout-button" onClick={handleLogout}>
+                Logout
+              </button>
+            )}
           </div>
         </div>
 

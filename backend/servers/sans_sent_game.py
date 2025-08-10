@@ -1,34 +1,43 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+# Verify sys.path for debugging
+print("sys.path:", sys.path)
+
 from flask import Flask, jsonify, send_from_directory
-import json
-import random
-import argparse
 from flask_cors import CORS
+import random
+from Database.db import get_db_connection
+from bson.json_util import dumps
+import logging
+import argparse
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# MongoDB connection
+try:
+    db = get_db_connection()
+    sentences_collection = db["sentences"]
+    logger.info("Connected to MongoDB")
+except Exception as e:
+    logger.error(f"Failed to connect to MongoDB: {str(e)}")
+    sentences_collection = None
 
 # Load sentences data
 def load_sentences():
     try:
-        # Try multiple possible locations for sentences.json
-        possible_paths = [
-            "../dataset/sentences.json",  # From servers folder
-            "dataset/sentences.json",     # From root folder
-            "sentences.json"              # Current folder
-        ]
-        
-        for path in possible_paths:
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    print(f"Successfully loaded sentences from: {path}")
-                    return json.load(f)
-            except FileNotFoundError:
-                continue
-                
-        print("sentences.json not found in any expected location")
-        return []
+        if sentences_collection is None:
+            raise Exception("No MongoDB connection")
+        sentences = list(sentences_collection.find())
+        logger.info(f"Successfully loaded {len(sentences)} sentences from MongoDB")
+        return sentences
     except Exception as e:
-        print(f"Error loading sentences: {e}")
+        logger.error(f"Error loading sentences: {str(e)}")
         return []
 
 sentences = load_sentences()
@@ -44,17 +53,19 @@ def home():
 @app.route('/get_random_sentence')
 def get_random_sentence():
     if not sentences:
+        logger.warning("No sentences available")
         return jsonify({"error": "No sentences available"}), 404
     
     sentence_data = random.choice(sentences)
     
     # Create hint data
     hint = {
-        "subject": sentence_data["subject"] if sentence_data["subject"] else None,
-        "object": sentence_data["object"] if sentence_data["object"] else None,
+        "subject": sentence_data["subject"] if sentence_data.get("subject") else None,
+        "object": sentence_data["object"] if sentence_data.get("object") else None,
         "verb": sentence_data["verb"]
     }
     
+    logger.info(f"Returning sentence: {sentence_data.get('sentence')}")
     return jsonify({
         "sentence": sentence_data["sentence"],
         "subject": sentence_data["subject"],
@@ -64,9 +75,10 @@ def get_random_sentence():
         "hint": hint
     })
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=5001)
     args = parser.parse_args()
     
+    logger.info(f"Starting Sentence Game Server on port {args.port}")
     app.run(debug=True, host='0.0.0.0', port=args.port)

@@ -59,7 +59,7 @@ export const LoginSignup = ({ onLogin }) => {
 
         setTimeout(() => {
           if (onLogin) onLogin();
-          navigate("/dashboard");
+          navigate("/hero");
         }, 1000);
       } else {
         const { fullName, email, password, confirmPassword } = formData;
@@ -87,7 +87,7 @@ export const LoginSignup = ({ onLogin }) => {
 
         setTimeout(() => {
           if (onLogin) onLogin();
-          navigate("/dashboard");
+          navigate("/hero");
         }, 1000);
       }
     } catch (error) {

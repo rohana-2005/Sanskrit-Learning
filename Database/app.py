@@ -2,7 +2,15 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from db import get_db_connection
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from bson.json_util import dumps
+from bson.objectid import ObjectId
+import bcrypt
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, resources={r"/api/*": {
@@ -32,32 +40,36 @@ def register():
         return jsonify({'message': 'Full name, email, and password are required'}), 400
 
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT email FROM users WHERE email = %s", (email,))
-        if cursor.fetchone():
-            cursor.close()
-            conn.close()
+        db = get_db_connection()
+        if db.users.find_one({"email": email}):
             return jsonify({'message': 'Email already registered'}), 409
-        cursor.execute("INSERT INTO users (full_name, email, password, score) VALUES (%s, %s, %s, %s)",
-                       (full_name, email, password, 0))
-        conn.commit()
-        cursor.execute("SELECT id, full_name, email, score FROM users WHERE email = %s", (email,))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        user_dict = {'id': user[0], 'fullName': user[1], 'email': user[2], 'score': user[3]}
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        result = db.users.insert_one({
+            "full_name": full_name,
+            "email": email,
+            "password": hashed_password,
+            "score": 0
+        })
+        user = db.users.find_one({"_id": result.inserted_id})
+        user_dict = {
+            'id': str(user['_id']),
+            'fullName': user['full_name'],
+            'email': user['email'],
+            'score': user['score']
+        }
         token = jwt.encode({
-            'user_id': user[0],
-            'email': user[2],
-            'exp': datetime.utcnow() + timedelta(hours=24)
+            'user_id': str(user['_id']),
+            'email': user['email'],
+            'exp': datetime.now(timezone.utc) + timedelta(hours=24)
         }, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+        logger.info(f"Registered user: {email}")
         return jsonify({
             'message': 'User registered successfully!',
             'user': user_dict,
             'token': token
         }), 201
     except Exception as e:
+        logger.error(f"Error in register: {str(e)}")
         return jsonify({'message': f'Database error: {str(e)}'}), 500
 
 @app.route('/api/login', methods=['POST', 'OPTIONS'])
@@ -76,26 +88,30 @@ def login():
         return jsonify({'message': 'Email and password are required'}), 400
 
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, full_name, email, score FROM users WHERE email = %s AND password = %s", (email, password))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        if user:
+        db = get_db_connection()
+        user = db.users.find_one({"email": email})
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['password']):
             token = jwt.encode({
-                'user_id': user['id'],
+                'user_id': str(user['_id']),
                 'email': user['email'],
-                'exp': datetime.utcnow() + timedelta(hours=24)
+                'exp': datetime.now(timezone.utc) + timedelta(hours=24)
             }, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+            user_dict = {
+                'id': str(user['_id']),
+                'full_name': user['full_name'],
+                'email': user['email'],
+                'score': user['score']
+            }
+            logger.info(f"User logged in: {email}")
             return jsonify({
                 'message': 'Login successful!',
-                'user': user,
+                'user': user_dict,
                 'token': token
             }), 200
         else:
             return jsonify({'message': 'Invalid email or password'}), 401
     except Exception as e:
+        logger.error(f"Error in login: {str(e)}")
         return jsonify({'message': f'Database error: {str(e)}'}), 500
 
 @app.route('/api/profile', methods=['GET', 'OPTIONS'])
@@ -113,14 +129,17 @@ def get_profile():
     try:
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         user_id = payload.get('user_id')
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, full_name, email, score FROM users WHERE id = %s", (user_id,))
-        user = cursor.fetchone()
-        cursor.close()
-        conn.close()
+        db = get_db_connection()
+        user = db.users.find_one({"_id": ObjectId(user_id)})
         if user:
-            return jsonify(user), 200
+            user_dict = {
+                'id': str(user['_id']),
+                'full_name': user['full_name'],
+                'email': user['email'],
+                'score': user['score']
+            }
+            logger.info(f"Profile fetched for user: {user['email']}")
+            return jsonify(user_dict), 200
         else:
             return jsonify({'message': 'User not found'}), 404
     except jwt.ExpiredSignatureError:
@@ -128,6 +147,7 @@ def get_profile():
     except jwt.InvalidTokenError:
         return jsonify({'message': 'Invalid token'}), 401
     except Exception as e:
+        logger.error(f"Error in get_profile: {str(e)}")
         return jsonify({'message': f'Database error: {str(e)}'}), 500
 
 @app.route('/api/update-score', methods=['POST', 'OPTIONS'])
@@ -149,34 +169,97 @@ def update_score():
         score_increment = data.get('score')
         if not user_id or score_increment is None:
             return jsonify({'message': 'Missing userId or score'}), 400
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("UPDATE users SET score = score + %s WHERE id = %s", (score_increment, user_id))
-        conn.commit()
-        cursor.execute("SELECT score FROM users WHERE id = %s", (user_id,))
-        new_score = cursor.fetchone()[0]
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Score updated successfully!', 'score': new_score}), 200
+        db = get_db_connection()
+        result = db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$inc": {"score": score_increment}}
+        )
+        if result.matched_count == 0:
+            return jsonify({'message': 'User not found'}), 404
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+        logger.info(f"Score updated for {user['email']}: {user['score']}")
+        return jsonify({
+            'message': 'Score updated successfully!',
+            'score': user['score']
+        }), 200
     except jwt.ExpiredSignatureError:
         return jsonify({'message': 'Token expired'}), 401
     except jwt.InvalidTokenError:
         return jsonify({'message': 'Invalid token'}), 401
     except Exception as e:
+        logger.error(f"Error in update_score: {str(e)}")
+        return jsonify({'message': f'Database error: {str(e)}'}), 500
+
+@app.route('/api/save-score', methods=['POST', 'OPTIONS'])
+def save_score():
+    if request.method == 'OPTIONS':
+        response = jsonify({'status': 'ok'})
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Methods', 'POST, OPTIONS')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+        return response
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return jsonify({'message': 'Authorization header required'}), 401
+    token = auth_header.split(' ')[1]
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get('user_id')
+        data = request.json
+        score = data.get('score')
+        if not user_id or score is None:
+            return jsonify({'message': 'Missing user_id or score'}), 400
+        db = get_db_connection()
+        result = db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"score": score}}
+        )
+        if result.matched_count == 0:
+            return jsonify({'message': 'User not found'}), 404
+        user = db.users.find_one({"_id": ObjectId(user_id)})
+        logger.info(f"Score saved for {user['email']}: {user['score']}")
+        return jsonify({
+            'message': 'Score saved successfully!',
+            'score': user['score']
+        }), 200
+    except jwt.ExpiredSignatureError:
+        return jsonify({'message': 'Token expired'}), 401
+    except jwt.InvalidTokenError:
+        return jsonify({'message': 'Invalid token'}), 401
+    except Exception as e:
+        logger.error(f"Error in save_score: {str(e)}")
         return jsonify({'message': f'Database error: {str(e)}'}), 500
 
 @app.route('/api/test', methods=['GET'])
 def test():
     try:
-        conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT id, full_name, email, score FROM users")
-        users = cursor.fetchall()
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Connection successful!', 'users': users}), 200
+        db = get_db_connection()
+        users = list(db.users.find())
+        users_dict = [{
+            'id': str(user['_id']),
+            'full_name': user['full_name'],
+            'email': user['email'],
+            'score': user['score']
+        } for user in users]
+        logger.info("Test endpoint accessed")
+        return jsonify({
+            'message': 'Connection successful!',
+            'users': users_dict
+        }), 200
     except Exception as e:
+        logger.error(f"Error in test: {str(e)}")
         return jsonify({'message': f'Database error: {str(e)}'}), 500
 
+@app.route('/health', methods=['GET'])
+def health():
+    try:
+        db = get_db_connection()
+        db.command('ping')
+        logger.info("Health check successful")
+        return jsonify({"status": "healthy", "server": "database"}), 200
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
+
 if __name__ == '__main__':
-    app.run(port=5006, debug=True)
+    app.run(host="0.0.0.0", port=5006, debug=True)

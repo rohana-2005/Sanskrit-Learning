@@ -9,7 +9,7 @@ const VerbGame = ({ score: propScore }) => {
   const location = useLocation();
   const globalScore = location.state?.score ?? propScore ?? 0;
   const [sessionScore, setSessionScore] = useState(0);
-  const [questions, setQuestions] = useState([]); // Store all questions
+  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selected, setSelected] = useState("");
   const [result, setResult] = useState("");
@@ -17,12 +17,15 @@ const VerbGame = ({ score: propScore }) => {
   const [attempt, setAttempt] = useState(0);
   const [showNext, setShowNext] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [submitLoading, setSubmitLoading] = useState(false); // Loading for Submit
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [qCount, setQCount] = useState(0);
   const [roundFinished, setRoundFinished] = useState(false);
   const [error, setError] = useState(null);
 
-  const options = ["present", "past", "future"];
+  const isValidSanskritForm = (form) => {
+    if (!form || typeof form !== "string") return false;
+    return /^[\u0900-\u097F]+$/.test(form);
+  };
 
   const updateScore = async (gameName, scoreIncrement) => {
     try {
@@ -59,18 +62,66 @@ const VerbGame = ({ score: propScore }) => {
     try {
       const fetchedQuestions = [];
       for (let i = 0; i < TOTAL_QUESTIONS; i++) {
-        const res = await fetch("http://localhost:5002/api/get-game");
+        const res = await fetch("http://localhost:5002/api/get-game", {
+          method: "GET",
+          headers: { "Content-Type": "application/json; charset=utf-8" },
+        });
+        if (!res.ok) {
+          console.warn(
+            `Failed to fetch question ${i + 1}: ${res.status} ${res.statusText}`
+          );
+          continue;
+        }
         const data = await res.json();
-        const options = [data.correct];
-        const distractors = data.options
-          .filter((opt) => opt !== data.correct)
-          .slice(0, 2);
-        const allOptions = shuffleArray([...options, ...distractors]);
-        fetchedQuestions.push({ ...data, options: allOptions });
+        console.log(
+          `Fetched question ${i + 1}:`,
+          JSON.stringify(data, null, 2)
+        );
+        if (
+          !data.sentence ||
+          !data.correct ||
+          !isValidSanskritForm(data.correct) ||
+          !data.options ||
+          !Array.isArray(data.options) ||
+          data.options.length < 3 ||
+          data.options.some((opt) => !isValidSanskritForm(opt))
+        ) {
+          console.warn(`Invalid question data for question ${i + 1}:`, data);
+          continue;
+        }
+        const validOptions = data.options.filter(
+          (opt) => opt !== data.correct && isValidSanskritForm(opt)
+        );
+        if (validOptions.length < 2) {
+          console.warn(
+            `Insufficient valid distractors for question ${i + 1}:`,
+            validOptions
+          );
+          continue;
+        }
+        const allOptions = shuffleArray([
+          data.correct,
+          ...validOptions.slice(0, 2),
+        ]);
+        fetchedQuestions.push({
+          sentence: data.sentence,
+          correct: data.correct,
+          options: allOptions,
+          hint: data.hint || "No hint available",
+          explanation: data.explanation || "No explanation available",
+        });
       }
+      if (fetchedQuestions.length === 0) {
+        throw new Error("No valid questions received from server");
+      }
+      console.log(
+        "Processed questions:",
+        JSON.stringify(fetchedQuestions, null, 2)
+      );
       setQuestions(fetchedQuestions);
       setError(null);
     } catch (error) {
+      console.error("Fetch error:", error.message, error.stack);
       setQuestions([]);
       setResult("❌ Failed to load questions.");
       setError("Failed to load questions. Please try again.");
@@ -90,11 +141,13 @@ const VerbGame = ({ score: propScore }) => {
     if (!selected || !currentQuestion) return;
     setSubmitLoading(true);
 
-    if (selected === currentQuestion.correct && attempt === 0) {
+    if (selected === currentQuestion.correct) {
       setResult(`✅ Correct!\n${currentQuestion.explanation}`);
       setHint("");
-      setSessionScore((prev) => prev + 1);
-      await updateScore("verbGame", 1);
+      if (attempt === 0) {
+        setSessionScore((prev) => prev + 1);
+        await updateScore("verbGame", 1);
+      }
       setShowNext(true);
     } else {
       const nextAttempt = attempt + 1;
@@ -106,7 +159,7 @@ const VerbGame = ({ score: propScore }) => {
         setResult(
           `❌ Wrong again! Correct answer: ${currentQuestion.correct}\n${currentQuestion.explanation}`
         );
-        setHint(`💡 Hint: ${currentQuestion.hint}`);
+        setHint(`💡 ${currentQuestion.hint}`);
         setShowNext(true);
       }
     }
@@ -166,19 +219,16 @@ const VerbGame = ({ score: propScore }) => {
               Question {qCount + 1} / {TOTAL_QUESTIONS}
             </div>
             <div className="session-score">Score: {sessionScore}</div>
-            <div className="score">
-              {/* Total Score: {globalScore + sessionScore} */}
-            </div>
             {error && <div className="error-message">{error}</div>}
           </div>
         )}
 
         {loading ? (
-          <div className="sentence-box">Loading...</div>
+          <div className="sentence-box">Loading questions...</div>
         ) : roundFinished ? (
           <div>
             <p className="result" style={{ fontSize: "1.3rem" }}>
-              Final Score: {sessionScore} / {TOTAL_QUESTIONS * 1}
+              Final Score: {sessionScore} / {TOTAL_QUESTIONS}
             </p>
             <button className="submit-btn" onClick={handlePlayAgain}>
               Play Again
@@ -189,8 +239,8 @@ const VerbGame = ({ score: propScore }) => {
             <div className="sentence-box">{currentQuestion.sentence}</div>
 
             <div className="options">
-              {currentQuestion.options.map((opt) => (
-                <label key={opt} className="option">
+              {currentQuestion.options.map((opt, index) => (
+                <label key={`${opt}-${index}`} className="option">
                   <input
                     type="radio"
                     name="verb"
@@ -199,7 +249,7 @@ const VerbGame = ({ score: propScore }) => {
                     onChange={() => setSelected(opt)}
                     disabled={submitLoading}
                   />
-                  {opt}
+                  <span className="option-text">{opt}</span>
                 </label>
               ))}
             </div>
@@ -236,7 +286,7 @@ const VerbGame = ({ score: propScore }) => {
 
           body {
             margin: 0;
-            font-family: 'Noto Sans Devanagari', sans-serif;
+            font-family: 'Noto Sans Devanagari', Mangal, sans-serif;
             background: linear-gradient(to bottom right, #d76d2b, #f0c14b);
             min-height: 100vh;
             display: flex;
@@ -272,6 +322,8 @@ const VerbGame = ({ score: propScore }) => {
 
           .controls {
             margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
           }
 
           .back-btn {
@@ -284,7 +336,6 @@ const VerbGame = ({ score: propScore }) => {
             font-size: 14px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: background-color 0.3s, transform 0.2s;
-            margin: 1rem;
           }
 
           .back-btn:hover {
@@ -297,7 +348,7 @@ const VerbGame = ({ score: propScore }) => {
             color: black;
           }
 
-          .question-count, .session-score, .score {
+          .question-count, .session-score {
             margin: 0.5rem 0;
             font-size: 1.1rem;
             font-weight: bold;
@@ -313,27 +364,45 @@ const VerbGame = ({ score: propScore }) => {
           .sentence-box {
             font-size: 1.3rem;
             padding: 12px;
-            background-color: #f6f9ff;
-            border: 1px solid #a2c4f2;
+            background-color: #fffbe6;
+            border: 1px solid #ffe58f;
             border-radius: 10px;
             margin-bottom: 20px;
             color: black;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
 
           .options {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 20px;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 12px;
             margin-bottom: 20px;
+            width: 100%;
           }
 
           .option {
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: black;
+            width: 100%;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+          }
+
+          .option:hover {
+            background-color: #fffbe6;
+          }
+
+          .option-text {
+            font-family: 'Noto Sans Devanagari', Mangal, sans-serif;
+            font-size: 1.2rem;
           }
 
           .submit-btn,
@@ -370,6 +439,26 @@ const VerbGame = ({ score: propScore }) => {
           .hint {
             color: #e67e22;
             font-style: italic;
+          }
+
+          @media (max-width: 600px) {
+            .verb-card {
+              padding: 16px;
+              width: 90%;
+            }
+            .game-title {
+              font-size: 24px;
+            }
+            .sentence-box {
+              font-size: 1.1rem;
+            }
+            .option {
+              font-size: 1rem;
+            }
+            .submit-btn, .next-btn {
+              padding: 8px 16px;
+              font-size: 0.9rem;
+            }
           }
         `}</style>
       </div>

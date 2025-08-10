@@ -1,14 +1,37 @@
+import sys
+from pathlib import Path
+import os
+import logging
+from dotenv import load_dotenv
+
+# Add root directory to Python path
+root_path = str(Path(__file__).resolve().parent.parent)
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)  # Insert at start to prioritize
+print("Python path:", sys.path)
+print("Root directory:", root_path)
+print("Current working directory:", os.getcwd())
+print("Files in root directory:", os.listdir(root_path))
+print("Files in Database directory:", os.listdir(os.path.join(root_path, 'Database')))
+
+try:
+    from Database.db import get_db_connection
+    print("Database module imported successfully")
+except Exception as e:
+    print("Failed to import Database.db:", str(e))
+    raise
+
 from flask import Flask, jsonify, send_from_directory, request
 from flask_cors import CORS
 import subprocess
 import threading
 import time
 import requests
-import os
-import sys
-from pathlib import Path
-import logging
 import json
+from bson.json_util import dumps
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -45,7 +68,7 @@ def start_server(script_path, port, server_name):
             logger.error(f"Error: {script_full_path} not found")
             return None
         env = os.environ.copy()
-        env['PYTHONPATH'] = str(Path.cwd())
+        env['PYTHONPATH'] = f"{os.getcwd()}{os.pathsep}{root_path}"
         env['FLASK_ENV'] = 'production'
         env['FLASK_DEBUG'] = '0'
         process = subprocess.Popen(
@@ -142,9 +165,9 @@ def number_game():
 @app.route('/api/sentences')
 def get_sentences():
     try:
-        with open(os.path.join('dataset', 'sentences.json'), encoding='utf-8') as f:
-            data = json.load(f)
-        return jsonify(data)
+        db = get_db_connection()
+        sentences = list(db.sentences.find())
+        return jsonify(dumps(sentences)), 200
     except Exception as e:
         logger.error(f"Error loading sentences: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -180,7 +203,7 @@ def get_number_game():
 @app.route('/api/generate-matching-game')
 def generate_matching_game():
     try:
-        dataset_path = Path("dataset")
+        dataset_path = Path(root_path) / "dataset"
         if not dataset_path.exists():
             logger.error("Dataset directory not found")
             return jsonify({"status": "error", "message": "Dataset directory not found"}), 404
@@ -188,7 +211,13 @@ def generate_matching_game():
         result = subprocess.run([sys.executable, "mtc_gen.py"], capture_output=True, text=True)
         os.chdir(Path(__file__).parent)
         if result.returncode == 0:
-            return jsonify({"status": "success", "message": "Matching game data generated successfully", "output": result.stdout})
+            # Reload generated matching_game.json into MongoDB
+            db = get_db_connection()
+            with open(dataset_path / 'matching_game.json', 'r', encoding='utf-8-sig') as f:
+                data = json.load(f)
+            db.matching_game.delete_many({})
+            db.matching_game.insert_many(data)
+            return jsonify({"status": "success", "message": "Matching game data generated and loaded to MongoDB", "output": result.stdout})
         else:
             logger.error(f"Failed to generate matching game data: {result.stderr}")
             return jsonify({"status": "error", "message": "Failed to generate matching game data", "error": result.stderr}), 500
@@ -199,13 +228,9 @@ def generate_matching_game():
 @app.route('/api/get-matching-game')
 def get_matching_game():
     try:
-        file_path = Path('dataset/matching_game.json')
-        if not file_path.exists():
-            logger.error("matching_game.json not found")
-            return jsonify({'error': 'matching_game.json not found'}), 404
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return jsonify(data), 200
+        db = get_db_connection()
+        data = list(db.matching_game.find())
+        return jsonify(dumps(data)), 200
     except Exception as e:
         logger.error(f"Error loading matching game data: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -289,7 +314,7 @@ def restart_servers():
 @app.route('/api/generate-sentences')
 def generate_sentences():
     try:
-        dataset_path = Path("dataset")
+        dataset_path = Path(root_path) / "dataset"
         if not dataset_path.exists():
             logger.error("Dataset directory not found")
             return jsonify({"status": "error", "message": "Dataset directory not found"}), 404
@@ -297,31 +322,19 @@ def generate_sentences():
         result = subprocess.run([sys.executable, "gen.py"], capture_output=True, text=True)
         os.chdir(Path(__file__).parent)
         if result.returncode == 0:
-            return jsonify({"status": "success", "message": "Sentences generated", "output": result.stdout})
+            # Reload generated sentences.json into MongoDB
+            db = get_db_connection()
+            with open(dataset_path / 'sentences.json', 'r', encoding='utf-8-sig') as f:
+                data = json.load(f)
+            db.sentences.delete_many({})
+            db.sentences.insert_many(data)
+            return jsonify({"status": "success", "message": "Sentences generated and loaded to MongoDB", "output": result.stdout})
         else:
             logger.error(f"Failed to generate sentences: {result.stderr}")
             return jsonify({"status": "error", "message": result.stderr}), 500
     except Exception as e:
         logger.error(f"Error running gen.py: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/api/mtc-game')
-def get_mtc_game():
-    try:
-        file_path = Path('dataset/matching_game.json')
-        if not file_path.exists():
-            logger.error("matching_game.json not found")
-            return jsonify({'error': 'matching_game.json not found'}), 404
-        with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return jsonify(data), 200
-    except Exception as e:
-        logger.error(f"Error loading mtc game data: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/health')
-def health():
-    return jsonify({"status": "healthy", "server": "main"})
 
 @app.route('/api/register', methods=['POST', 'OPTIONS'])
 def register_user():

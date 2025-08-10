@@ -715,7 +715,7 @@ export default function Questions() {
               Sanskrit adventure with lessons tailored just for you!
             </p>
           
-            <Link to="/login" style={styles.startButton} className="option-button">
+            <Link to="/hero" style={styles.startButton} className="option-button">
               Begin My Sanskrit Journey! 🕉️
             </Link>
           </div>

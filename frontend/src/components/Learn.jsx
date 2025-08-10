@@ -1,7 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+
 
 const Learn = () => {
+  
+  const navigate = useNavigate();
   const grammarTopics = [
     {
       title: "Sanskrit Sentence Structure",
@@ -266,10 +270,11 @@ const Learn = () => {
           <span style={styles.icon}>📚</span>
           <h2 style={styles.titleText}>Learning Modules</h2>
         </div>
-        <button 
+        <button
           style={styles.backButton}
           onMouseEnter={handleButtonHover}
           onMouseLeave={handleButtonLeave}
+          onClick={() => navigate("/dashboard")}
         >
           ← Back to Dashboard
         </button>
@@ -278,8 +283,8 @@ const Learn = () => {
       <section style={styles.grammarSection}>
         <div style={styles.grammarGrid}>
           {grammarTopics.map((topic, index) => (
-            <Link 
-              key={index} 
+            <Link
+              key={index}
               to={topic.link}
               style={getCardStyle(topic.category)}
               onMouseEnter={handleCardHover}
@@ -288,7 +293,9 @@ const Learn = () => {
               <div className="glow-effect" style={styles.glowEffect}></div>
               <div style={styles.cardIcon}>{topic.icon}</div>
               <h3 style={styles.cardTitle}>{topic.title}</h3>
-              {topic.subtitle && <p style={styles.cardSubtitle}>{topic.subtitle}</p>}
+              {topic.subtitle && (
+                <p style={styles.cardSubtitle}>{topic.subtitle}</p>
+              )}
             </Link>
           ))}
         </div>

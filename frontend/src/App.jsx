@@ -5,13 +5,11 @@ import Questions from "./components/Question";
 import { LoginSignup } from "./components/login_signup";
 import DragDropGame from "./components/DragDropGame";
 import { ParallaxProvider } from "react-scroll-parallax";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrowserRouter,
   Routes,
   Route,
-  useNavigate,
-  useLocation,
 } from "react-router-dom";
 import { tokenManager } from "./services/api";
 import TenseGame from "./components/TenseGame";
@@ -21,11 +19,12 @@ import SankhyaTrivia from "./components/SankhyaTrivia";
 import LearningModule from "./components/LearningModule";
 import Learn from "./components/Learn";
 import LearnObject from "./components/Learn_object";
-import LearnSanskritSentence from "./components/Learn_Sentence_Structure"; 
+import LearnSanskritSentence from "./components/Learn_Sentence_Structure";
 import LearnPresentTense from "./components/Learn_present_tense";
 import LearnSubject from "./components/LearnSubject";
 import LearnFutureTense from "./components/LearnFutureTense";
 import LearnPastTense from "./components/LearnPastTense";
+import LoginRequiredPage from "./components/LoginRequiredPage";
 
 // Fixed brand header component
 function BrandHeader() {
@@ -43,7 +42,6 @@ function BrandHeader() {
         backgroundColor: "rgba(203, 148, 66, 0.8)",
         padding: "4px 12px",
         borderRadius: "5px",
-        // boxShadow: "0 2px 5px rgba(0,0,0,0.1)",
       }}
     >
       संस्कृतमणिः
@@ -101,68 +99,67 @@ function AuthWrapper() {
         <Route path="/" element={<Landing />} />
         <Route path="/questions" element={<Questions />} />
         <Route path="/login" element={<LoginSignup onLogin={handleLogin} />} />
-        <Route path="/tense-game" element={<TenseGame />} />
-        <Route path="/verb-game" element={<VerbGame />} />
-        <Route path="/shabda-fusion" element={<ShabdaFusion />} />
-        <Route path="/sankhya-trivia" element={<SankhyaTrivia />} />
         <Route path="/learning-module" element={<LearningModule />} />
         <Route path="/learn" element={<Learn />} />
         <Route path="/learn-object" element={<LearnObject />} />
         <Route path="/learn-sentences" element={<LearnSanskritSentence />} />
         <Route path="/learn-subject" element={<LearnSubject />} />
         <Route path="/learn-present-tense" element={<LearnPresentTense />} />
-        {<Route path="/learn-past-tense" element={<LearnPastTense />} />}
+        <Route path="/learn-past-tense" element={<LearnPastTense />} />
         <Route path="/learn-future-tense" element={<LearnFutureTense />} />
+        <Route path="/login-required" element={<LoginRequiredPage />} />
+        <Route path="/hero" element={<HeroSection />} />
+        <Route path="/hero-dashboard" element={<HeroSection />} />
+        <Route path="/dashboard" element={<Dashboard />} />
 
         {/* Protected Routes */}
-        <Route
-          path="/hero-dashboard"
-          element={
-            isAuthenticated ? (
-              <HeroSectionWithButton onLogout={handleLogout} />
-            ) : (
-              <LoginSignup onLogin={handleLogin} />
-            )
-          }
-        />
-        <Route
-          path="/hero"
-          element={
-            isAuthenticated ? (
-              <HeroSectionWithButton onLogout={handleLogout} />
-            ) : (
-              <LoginSignup onLogin={handleLogin} />
-            )
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            isAuthenticated ? (
-              <DashboardWithNavigation onLogout={handleLogout} />
-            ) : (
-              <LoginSignup onLogin={handleLogin} />
-            )
-          }
-        />
-
         <Route
           path="/game"
           element={
             isAuthenticated ? (
               <DragDropGame onLogout={handleLogout} />
             ) : (
-              <LoginSignup onLogin={handleLogin} />
+              <LoginRequiredPage />
             )
           }
         />
         <Route
-          path="/tensegame"
+          path="/tense-game"
           element={
             isAuthenticated ? (
               <TenseGame />
             ) : (
-              <LoginSignup onLogin={handleLogin} />
+              <LoginRequiredPage />
+            )
+          }
+        />
+        <Route
+          path="/verb-game"
+          element={
+            isAuthenticated ? (
+              <VerbGame />
+            ) : (
+              <LoginRequiredPage />
+            )
+          }
+        />
+        <Route
+          path="/shabda-fusion"
+          element={
+            isAuthenticated ? (
+              <ShabdaFusion />
+            ) : (
+              <LoginRequiredPage />
+            )
+          }
+        />
+        <Route
+          path="/sankhya-trivia"
+          element={
+            isAuthenticated ? (
+              <SankhyaTrivia />
+            ) : (
+              <LoginRequiredPage />
             )
           }
         />
@@ -171,88 +168,12 @@ function AuthWrapper() {
   );
 }
 
-// Dashboard with navigation buttons
-function DashboardWithNavigation({ onLogout }) {
-  const navigate = useNavigate();
-
-  return (
-    <div style={{ position: "relative" }}>
-      <Dashboard />
-      {/* Navigation buttons */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "30px",
-          right: "30px",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-        }}
-      >
-        <button
-          onClick={onLogout}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#f44336",
-            color: "white",
-            border: "none",
-            borderRadius: "25px",
-            fontSize: "14px",
-            cursor: "pointer",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// Modified HeroSection with button to navigate to game
-function HeroSectionWithButton({ onLogout }) {
-  const navigate = useNavigate();
-
-  return (
-    <div style={{ position: "relative" }}>
-      <HeroSection />
-      {/* Floating button to start game */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: "30px",
-          right: "30px",
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: "10px",
-        }}
-      >
-        <button
-          onClick={onLogout}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: "#f44336",
-            color: "white",
-            border: "none",
-            borderRadius: "25px",
-            fontSize: "14px",
-            cursor: "pointer",
-            boxShadow: "0 2px 10px rgba(0,0,0,0.3)",
-          }}
-        >
-          Logout
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function App() {
   return (
     <BrowserRouter>
-      <AuthWrapper />
+      <ParallaxProvider>
+        <AuthWrapper />
+      </ParallaxProvider>
     </BrowserRouter>
   );
 }
