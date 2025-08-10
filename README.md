@@ -1,1 +1,1 @@
-# Sanskrit_Learning_System
+# Sanskrit Learning System
